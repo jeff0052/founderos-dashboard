@@ -5,6 +5,58 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>FounderOS Dashboard</title>
 <style>
+  /* Login Screen */
+  .login-overlay {
+    position: fixed;
+    inset: 0;
+    background: #0a0a0f;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    flex-direction: column;
+  }
+  .login-overlay.hidden { display: none; }
+  .login-box {
+    text-align: center;
+  }
+  .login-box h1 {
+    font-size: 32px;
+    font-weight: 700;
+    background: linear-gradient(135deg, #6366f1, #a855f7);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 32px;
+  }
+  .login-box input {
+    background: #1a1a26;
+    border: 1px solid #2a2a3a;
+    border-radius: 12px;
+    padding: 14px 20px;
+    color: #e0e0e8;
+    font-size: 16px;
+    width: 260px;
+    text-align: center;
+    outline: none;
+    -webkit-text-security: disc;
+  }
+  .login-box input:focus { border-color: #6366f1; }
+  .login-box .error { color: #ef4444; font-size: 13px; margin-top: 12px; min-height: 20px; }
+  .login-box button {
+    display: block;
+    margin: 16px auto 0;
+    background: linear-gradient(135deg, #6366f1, #a855f7);
+    border: none;
+    border-radius: 12px;
+    padding: 12px 40px;
+    color: white;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .dashboard-content.locked { display: none; }
+</style>
+<style>
   :root {
     --bg: #0a0a0f;
     --surface: #12121a;
@@ -345,6 +397,17 @@
 </head>
 <body>
 
+<!-- Login Screen -->
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-box">
+    <h1>⚡ FounderOS</h1>
+    <input type="password" id="pwdInput" placeholder="Password" autofocus>
+    <div class="error" id="loginError"></div>
+    <button onclick="tryLogin()">Enter</button>
+  </div>
+</div>
+
+<div class="dashboard-content locked" id="dashboardContent">
 <div class="header">
   <h1>⚡ FounderOS</h1>
   <div class="level-badge">🎮 Level 1 — Offline Acquiring</div>
@@ -660,5 +723,40 @@
   Last updated: 2026-03-13 01:07 SGT &nbsp;·&nbsp; FounderOS v1.0
 </div>
 
+</div><!-- end dashboard-content -->
+
+<script>
+const HASH = '6e8615893da9474539d5d0d4e0f3ace7b1dd946030878bd223c6774a3297b37d';
+
+async function sha256(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+async function tryLogin() {
+  const pwd = document.getElementById('pwdInput').value;
+  const hash = await sha256(pwd);
+  if (hash === HASH) {
+    sessionStorage.setItem('fos_auth', '1');
+    unlock();
+  } else {
+    document.getElementById('loginError').textContent = 'Wrong password';
+    document.getElementById('pwdInput').value = '';
+  }
+}
+
+function unlock() {
+  document.getElementById('loginOverlay').classList.add('hidden');
+  document.getElementById('dashboardContent').classList.remove('locked');
+}
+
+// Auto-unlock if already authed this session
+if (sessionStorage.getItem('fos_auth') === '1') unlock();
+
+// Enter key support
+document.getElementById('pwdInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') tryLogin();
+});
+</script>
 </body>
 </html>
